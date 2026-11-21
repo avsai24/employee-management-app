@@ -3,6 +3,7 @@ import { authGuard } from './core/auth/auth.guard';
 import { LoginComponent } from './features/login/login.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { EmployeesListComponent } from './features/employees/employees-list.component';
+import { ReportsComponent } from './features/reports/reports.component';
 import { ShellComponent } from './layout/shell.component';
 
 export const routes: Routes = [
@@ -14,8 +15,10 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardComponent },
-      { path: 'employees', component: EmployeesListComponent }
+      { path: 'employees', component: EmployeesListComponent },
+      { path: 'reports', component: ReportsComponent }
     ]
   },
   { path: '**', redirectTo: 'dashboard' }
 ];
+

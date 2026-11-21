@@ -69,4 +69,40 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     long countByDeletedFalse();
 
     long countByDeletedFalseAndStatus(EmployeeStatus status);
+
+    @Query("""
+            SELECT e.status, COUNT(e)
+            FROM Employee e
+            WHERE e.deleted = false
+              AND (:status IS NULL OR e.status = :status)
+              AND (:department IS NULL OR :department = '' OR LOWER(e.department) = LOWER(:department))
+              AND (:fromDate IS NULL OR e.hireDate >= :fromDate)
+              AND (:toDate IS NULL OR e.hireDate <= :toDate)
+            GROUP BY e.status
+            """)
+    List<Object[]> countGroupedByStatus(
+            @Param("status") EmployeeStatus status,
+            @Param("department") String department,
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate);
+
+    @Query("""
+            SELECT e.department, COUNT(e)
+            FROM Employee e
+            WHERE e.deleted = false
+              AND (:status IS NULL OR e.status = :status)
+              AND (:department IS NULL OR :department = '' OR LOWER(e.department) = LOWER(:department))
+              AND (:fromDate IS NULL OR e.hireDate >= :fromDate)
+              AND (:toDate IS NULL OR e.hireDate <= :toDate)
+            GROUP BY e.department
+            ORDER BY e.department
+            """)
+    List<Object[]> countGroupedByDepartment(
+            @Param("status") EmployeeStatus status,
+            @Param("department") String department,
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate);
+
+    @Query("SELECT DISTINCT e.department FROM Employee e WHERE e.deleted = false ORDER BY e.department")
+    List<String> findDistinctDepartments();
 }
