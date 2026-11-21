@@ -20,7 +20,7 @@ export const routes: Routes = [
       {
         path: 'reports',
         component: ReportsComponent,
-        canActivate: [roleGuard('ROLE_ADMIN')]
+        canActivate: [roleGuard('ROLE_ADMIN', 'ROLE_USER')]
       }
     ]
   },

@@ -106,11 +106,11 @@ export class EmployeesListComponent implements OnInit, OnDestroy {
     const ref = this.dialog.open(EmployeeDetailDialogComponent, {
       width: '620px',
       maxWidth: '94vw',
-      data: { employee, canEdit: this.auth.isAdmin() }
+      data: { employee, canEdit: this.auth.canMutateEmployees() }
     });
 
     ref.afterClosed().subscribe((result) => {
-      if (result === 'edit' && this.auth.isAdmin()) {
+      if (result === 'edit' && this.auth.canMutateEmployees()) {
         this.openEdit(employee);
       }
     });
@@ -137,7 +137,7 @@ export class EmployeesListComponent implements OnInit, OnDestroy {
   }
 
   openCreate(): void {
-    if (!this.auth.isAdmin()) {
+    if (!this.auth.canMutateEmployees()) {
       return;
     }
     const ref = this.dialog.open(EmployeeFormDialogComponent, {
@@ -162,7 +162,7 @@ export class EmployeesListComponent implements OnInit, OnDestroy {
   }
 
   openEdit(employee: Employee): void {
-    if (!this.auth.isAdmin()) {
+    if (!this.auth.canMutateEmployees()) {
       return;
     }
     const ref = this.dialog.open(EmployeeFormDialogComponent, {
@@ -187,7 +187,7 @@ export class EmployeesListComponent implements OnInit, OnDestroy {
   }
 
   confirmDelete(employee: Employee): void {
-    if (!this.auth.isAdmin()) {
+    if (!this.auth.canMutateEmployees()) {
       return;
     }
     const ref = this.dialog.open(ConfirmDialogComponent, {

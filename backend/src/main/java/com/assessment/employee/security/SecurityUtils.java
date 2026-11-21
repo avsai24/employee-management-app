@@ -20,9 +20,23 @@ public final class SecurityUtils {
         return requireAuthentication().getName();
     }
 
-    public static boolean isAdmin() {
+    public static boolean hasRole(String role) {
         return requireAuthentication().getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .anyMatch("ROLE_ADMIN"::equals);
+                .anyMatch(role::equals);
+    }
+
+    public static boolean isAdmin() {
+        return hasRole("ROLE_ADMIN");
+    }
+
+    /** Read-only company-wide viewer (can see all employees + reports). */
+    public static boolean isViewer() {
+        return hasRole("ROLE_USER");
+    }
+
+    /** Self-service employee (own profile only). */
+    public static boolean isSelfServiceEmployee() {
+        return hasRole("ROLE_EMPLOYEE");
     }
 }

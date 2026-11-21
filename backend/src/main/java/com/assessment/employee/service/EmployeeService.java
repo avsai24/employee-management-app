@@ -29,7 +29,8 @@ public class EmployeeService {
 
     @Transactional(readOnly = true)
     public Page<EmployeeResponse> list(String search, Pageable pageable) {
-        if (!SecurityUtils.isAdmin()) {
+        // Self-service employees only see their own row; admin + viewer see everyone
+        if (SecurityUtils.isSelfServiceEmployee()) {
             return listOwnProfile(search, pageable);
         }
         return employeeRepository.searchActive(search, pageable).map(EmployeeResponse::from);
@@ -116,8 +117,11 @@ public class EmployeeService {
     }
 
     private void assertCanView(Long employeeId) {
-        if (SecurityUtils.isAdmin()) {
+        if (SecurityUtils.isAdmin() || SecurityUtils.isViewer()) {
             return;
+        }
+        if (!SecurityUtils.isSelfServiceEmployee()) {
+            throw new ApiException("Forbidden", HttpStatus.FORBIDDEN);
         }
         Long linked = requireLinkedEmployeeId();
         if (!linked.equals(employeeId)) {

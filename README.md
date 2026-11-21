@@ -11,7 +11,7 @@ Use it to manage employees (CRUD), view a dashboard, and (as admin) filter/expor
 | Area | Details |
 |------|---------|
 | Auth | JWT login/logout, access + refresh tokens, remember username, AuthGuard, HTTP interceptor |
-| Roles | `ROLE_ADMIN` → full CRUD + Reports · `ava.patel` (`ROLE_USER`) → read-only own profile (EMP001 Ava Patel) |
+| Roles | `admin` full CRUD + Reports · `user` view-all + Reports (no CUD) · `ava.patel` own profile only |
 | Session | 30-minute idle timeout with warning before logout |
 | Employees | Search, sort, server-side pagination (10/page), add/edit/detail, soft delete + confirm |
 | Employment | Full-time / Contract / Intern · inactive requires reason · end-date rules by type |
@@ -97,9 +97,10 @@ App: http://localhost:4200
 | Username | Password | Role | Access |
 |----------|----------|------|--------|
 | `admin` | `admin123` | `ROLE_ADMIN` | Full employee CRUD + **Reports** |
-| `ava.patel` | `ava123` | `ROLE_USER` | Read-only **My Profile** for Ava Patel (EMP001). No add/edit/delete. No Reports |
+| `user` | `user123` | `ROLE_USER` (Viewer) | See all employees + **Reports**. **No** create / update / delete |
+| `ava.patel` | `ava123` | `ROLE_EMPLOYEE` | Read-only **My Profile** (Ava Patel / EMP001). No Reports |
 
-Tip: log in as both to demo admin vs employee self-service.
+Tip: compare all three logins to demo admin vs viewer vs self-service employee.
 
 ---
 
@@ -109,6 +110,7 @@ Tip: log in as both to demo admin vs employee self-service.
 - [ ] Bad password shows an error  
 - [ ] Employees: search, add, edit, delete (confirm dialog)  
 - [ ] Reports: filter + download Excel and PDF  
+- [ ] Login as `user` / `user123` → see all + Reports, no Add/Edit/Delete  
 - [ ] Login as `ava.patel` / `ava123` → My Profile only, Reports hidden  
 - [ ] Logout → protected routes redirect to login  
 

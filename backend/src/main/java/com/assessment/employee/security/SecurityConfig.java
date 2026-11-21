@@ -39,13 +39,13 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/refresh").permitAll()
-                        // Employee mutations: ADMIN only (self-service users are read-only)
+                        // Employee mutations: ADMIN only (viewers + employees are read-only)
                         .requestMatchers(HttpMethod.POST, "/api/employees").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/employees/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/employees/**").hasRole("ADMIN")
-                        // Reports page + exports: ADMIN only
-                        .requestMatchers("/api/reports/employees/export/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/reports/employees").hasRole("ADMIN")
+                        // Reports: ADMIN + USER (viewer). Self-service ROLE_EMPLOYEE cannot access.
+                        .requestMatchers("/api/reports/employees/export/**").hasAnyRole("ADMIN", "USER")
+                        .requestMatchers(HttpMethod.GET, "/api/reports/employees").hasAnyRole("ADMIN", "USER")
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())

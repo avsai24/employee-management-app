@@ -36,22 +36,38 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Seeded default user: admin / admin123");
         }
 
-        // Self-service login for employee Ava Patel (EMP001)
-        if (!userRepository.existsByUsername("ava.patel")) {
+        // Read-only viewer: sees all employees + reports, cannot CUD
+        userRepository.findByUsername("user").ifPresentOrElse(existing -> {
+            existing.setActive(true);
+            existing.setRole("ROLE_USER");
+            existing.setEmployeeId(null);
+            existing.setPassword(passwordEncoder.encode("user123"));
+            userRepository.save(existing);
+            log.info("Ensured viewer account: user / user123 (read-only company-wide)");
+        }, () -> {
             userRepository.save(User.builder()
-                    .username("ava.patel")
-                    .password(passwordEncoder.encode("ava123"))
+                    .username("user")
+                    .password(passwordEncoder.encode("user123"))
                     .role("ROLE_USER")
                     .active(true)
                     .build());
-            log.info("Seeded self-service user: ava.patel / ava123 (linked to EMP001)");
-        }
+            log.info("Seeded viewer account: user / user123 (read-only company-wide)");
+        });
 
-        // Retire old generic demo account if it still exists
-        userRepository.findByUsername("user").ifPresent(legacy -> {
-            legacy.setActive(false);
-            userRepository.save(legacy);
-            log.info("Deactivated legacy demo account: user");
+        // Self-service login for employee Ava Patel (EMP001) — own profile only
+        userRepository.findByUsername("ava.patel").ifPresentOrElse(existing -> {
+            existing.setActive(true);
+            existing.setRole("ROLE_EMPLOYEE");
+            userRepository.save(existing);
+            log.info("Ensured self-service account: ava.patel / ava123");
+        }, () -> {
+            userRepository.save(User.builder()
+                    .username("ava.patel")
+                    .password(passwordEncoder.encode("ava123"))
+                    .role("ROLE_EMPLOYEE")
+                    .active(true)
+                    .build());
+            log.info("Seeded self-service user: ava.patel / ava123 (linked to EMP001)");
         });
 
         // Backfill employment type for existing rows after schema update

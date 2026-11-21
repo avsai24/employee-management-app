@@ -22,7 +22,14 @@ export class AuthService {
   readonly username = computed(() => this.usernameSignal());
   readonly role = computed(() => this.roleSignal());
   readonly employeeId = computed(() => this.employeeIdSignal());
+  /** Full CRUD + reports */
   readonly isAdmin = computed(() => this.roleSignal() === 'ROLE_ADMIN');
+  /** Company-wide read-only viewer (sees all + reports, no CUD) */
+  readonly isViewer = computed(() => this.roleSignal() === 'ROLE_USER');
+  /** Self-service employee (own profile only) */
+  readonly isSelfService = computed(() => this.roleSignal() === 'ROLE_EMPLOYEE');
+  readonly canViewReports = computed(() => this.isAdmin() || this.isViewer());
+  readonly canMutateEmployees = computed(() => this.isAdmin());
 
   constructor(
     private readonly http: HttpClient,

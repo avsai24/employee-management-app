@@ -1,17 +1,19 @@
 <section class="page">
   <header class="hero">
     <div>
-      <p class="eyebrow">{{ auth.isAdmin() ? 'Directory' : 'Self-service' }}</p>
-      <h1>{{ auth.isAdmin() ? 'Employees' : 'My Profile' }}</h1>
+      <p class="eyebrow">{{ auth.isSelfService() ? 'Self-service' : 'Directory' }}</p>
+      <h1>{{ auth.isSelfService() ? 'My Profile' : 'Employees' }}</h1>
       <p class="subtitle">
-        {{
-          auth.isAdmin()
-            ? 'Search, sort, and manage employee records. Click a row to view details.'
-            : 'Read-only view of your linked employee record.'
-        }}
+        @if (auth.isAdmin()) {
+          Search, sort, and manage employee records. Click a row to view details.
+        } @else if (auth.isViewer()) {
+          Browse all employee records in read-only mode. Create, edit, and delete are admin-only.
+        } @else {
+          Read-only view of your linked employee record.
+        }
       </p>
     </div>
-    @if (auth.isAdmin()) {
+    @if (auth.canMutateEmployees()) {
       <button mat-flat-button color="primary" class="add-btn" (click)="openCreate()">
         <mat-icon>person_add</mat-icon>
         Add Employee
@@ -21,7 +23,7 @@
 
   <div class="panel">
     <div class="panel-toolbar">
-      @if (auth.isAdmin()) {
+      @if (!auth.isSelfService()) {
         <mat-form-field appearance="outline" class="search" subscriptSizing="dynamic">
           <mat-label>Search employees</mat-label>
           <mat-icon matPrefix>search</mat-icon>
@@ -107,7 +109,7 @@
             <button mat-icon-button type="button" (click)="openView(row)" aria-label="View details">
               <mat-icon>visibility</mat-icon>
             </button>
-            @if (auth.isAdmin()) {
+            @if (auth.canMutateEmployees()) {
               <button mat-icon-button type="button" (click)="openEdit(row)" aria-label="Edit">
                 <mat-icon>edit</mat-icon>
               </button>
