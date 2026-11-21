@@ -16,10 +16,12 @@ export class AuthService {
   private readonly tokenSignal = signal<string | null>(this.readToken());
   private readonly usernameSignal = signal<string | null>(this.readUsername());
   private readonly roleSignal = signal<string | null>(this.readRole());
+  private readonly employeeIdSignal = signal<number | null>(this.readEmployeeId());
 
   readonly isAuthenticated = computed(() => !!this.tokenSignal());
   readonly username = computed(() => this.usernameSignal());
   readonly role = computed(() => this.roleSignal());
+  readonly employeeId = computed(() => this.employeeIdSignal());
   readonly isAdmin = computed(() => this.roleSignal() === 'ROLE_ADMIN');
 
   constructor(
@@ -84,10 +86,18 @@ export class AuthService {
   private persistSession(res: LoginResponse): void {
     localStorage.setItem(TOKEN_KEY, res.token);
     localStorage.setItem(REFRESH_KEY, res.refreshToken);
-    localStorage.setItem(USER_KEY, JSON.stringify({ username: res.username, role: res.role }));
+    localStorage.setItem(
+      USER_KEY,
+      JSON.stringify({
+        username: res.username,
+        role: res.role,
+        employeeId: res.employeeId ?? null
+      })
+    );
     this.tokenSignal.set(res.token);
     this.usernameSignal.set(res.username);
     this.roleSignal.set(res.role);
+    this.employeeIdSignal.set(res.employeeId ?? null);
   }
 
   private clearSession(navigateToLogin: boolean): void {
@@ -97,6 +107,7 @@ export class AuthService {
     this.tokenSignal.set(null);
     this.usernameSignal.set(null);
     this.roleSignal.set(null);
+    this.employeeIdSignal.set(null);
     if (navigateToLogin) {
       this.router.navigate(['/login']);
     }
@@ -107,14 +118,19 @@ export class AuthService {
   }
 
   private readUsername(): string | null {
-    return this.readUserField('username');
+    return this.readUserField('username') as string | null;
   }
 
   private readRole(): string | null {
-    return this.readUserField('role');
+    return this.readUserField('role') as string | null;
   }
 
-  private readUserField(field: 'username' | 'role'): string | null {
+  private readEmployeeId(): number | null {
+    const value = this.readUserField('employeeId');
+    return typeof value === 'number' ? value : null;
+  }
+
+  private readUserField(field: 'username' | 'role' | 'employeeId'): string | number | null {
     const raw = localStorage.getItem(USER_KEY);
     if (!raw) {
       return null;

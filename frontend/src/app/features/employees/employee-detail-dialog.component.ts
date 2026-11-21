@@ -6,6 +6,7 @@ import { Employee } from '../../core/employees/employee.models';
 
 export interface EmployeeDetailDialogData {
   employee: Employee;
+  canEdit?: boolean;
 }
 
 @Component({
@@ -21,6 +22,10 @@ export class EmployeeDetailDialogComponent {
 
   get employee(): Employee {
     return this.data.employee;
+  }
+
+  get canEdit(): boolean {
+    return this.data.canEdit !== false;
   }
 
   get isTermBased(): boolean {

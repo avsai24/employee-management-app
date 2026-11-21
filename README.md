@@ -11,7 +11,7 @@ Use it to manage employees (CRUD), view a dashboard, and (as admin) filter/expor
 | Area | Details |
 |------|---------|
 | Auth | JWT login/logout, access + refresh tokens, remember username, AuthGuard, HTTP interceptor |
-| Roles | `ROLE_ADMIN` → Dashboard, Employees, Reports · `ROLE_USER` → Dashboard, Employees only |
+| Roles | `ROLE_ADMIN` → full CRUD + Reports · `ava.patel` (`ROLE_USER`) → read-only own profile (EMP001 Ava Patel) |
 | Session | 30-minute idle timeout with warning before logout |
 | Employees | Search, sort, server-side pagination (10/page), add/edit/detail, soft delete + confirm |
 | Employment | Full-time / Contract / Intern · inactive requires reason · end-date rules by type |
@@ -78,7 +78,7 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 17)   # macOS
 Wait for: `Started EmployeeManagementApplication`  
 API base: http://localhost:8080  
 
-First boot seeds admin/user accounts and sample employees.
+First boot seeds admin + Ava Patel self-service accounts and sample employees.
 
 ### 3) Start frontend
 
@@ -96,10 +96,10 @@ App: http://localhost:4200
 
 | Username | Password | Role | Access |
 |----------|----------|------|--------|
-| `admin` | `admin123` | `ROLE_ADMIN` | Dashboard, Employees, **Reports** |
-| `user` | `user123` | `ROLE_USER` | Dashboard, Employees (**no Reports**) |
+| `admin` | `admin123` | `ROLE_ADMIN` | Full employee CRUD + **Reports** |
+| `ava.patel` | `ava123` | `ROLE_USER` | Read-only **My Profile** for Ava Patel (EMP001). No add/edit/delete. No Reports |
 
-Tip: log in as both to show role-based menu visibility.
+Tip: log in as both to demo admin vs employee self-service.
 
 ---
 
@@ -109,7 +109,7 @@ Tip: log in as both to show role-based menu visibility.
 - [ ] Bad password shows an error  
 - [ ] Employees: search, add, edit, delete (confirm dialog)  
 - [ ] Reports: filter + download Excel and PDF  
-- [ ] Login as `user` / `user123` → Reports link hidden  
+- [ ] Login as `ava.patel` / `ava123` → My Profile only, Reports hidden  
 - [ ] Logout → protected routes redirect to login  
 
 ---
@@ -198,7 +198,7 @@ employee-management-app/
 | Wrong Java version | Use Java **17** (`JAVA_HOME`) |
 | Reports empty for “this month” | Widen the date filter; seed data may fall outside the default month |
 | Stuck logged-in state | Logout, or clear site data for localhost:4200, then login again |
-| `user` can still hit report URLs | Expected UI hide; API should return **403** for report list/exports |
+| `ava.patel` hits report URLs | Expected UI hide; API should return **403** for report list/exports |
 
 ---
 

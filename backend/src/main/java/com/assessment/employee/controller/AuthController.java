@@ -3,6 +3,8 @@ package com.assessment.employee.controller;
 import com.assessment.employee.dto.LoginRequest;
 import com.assessment.employee.dto.LoginResponse;
 import com.assessment.employee.dto.RefreshTokenRequest;
+import com.assessment.employee.entity.User;
+import com.assessment.employee.repository.UserRepository;
 import com.assessment.employee.security.JwtService;
 import jakarta.validation.Valid;
 import java.util.Map;
@@ -28,6 +30,7 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final UserRepository userRepository;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
@@ -64,17 +67,18 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> logout() {
-        // Stateless JWT: client clears access + refresh tokens.
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 
     private LoginResponse toLoginResponse(UserDetails userDetails) {
+        User user = userRepository.findByUsername(userDetails.getUsername()).orElseThrow();
         String role = userDetails.getAuthorities().iterator().next().getAuthority();
         return new LoginResponse(
                 jwtService.generateToken(userDetails),
                 jwtService.generateRefreshToken(userDetails),
                 userDetails.getUsername(),
                 role,
+                user.getEmployeeId(),
                 jwtService.getExpirationMs());
     }
 }

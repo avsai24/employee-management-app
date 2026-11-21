@@ -12,6 +12,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
+import { AuthService } from '../../core/auth/auth.service';
 import { Employee } from '../../core/employees/employee.models';
 import { EmployeeService } from '../../core/employees/employee.service';
 import { EmployeeFormDialogComponent } from './employee-form-dialog.component';
@@ -42,6 +43,7 @@ export class EmployeesListComponent implements OnInit, OnDestroy {
   private readonly employeeService = inject(EmployeeService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
+  readonly auth = inject(AuthService);
   private readonly destroy$ = new Subject<void>();
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -104,11 +106,11 @@ export class EmployeesListComponent implements OnInit, OnDestroy {
     const ref = this.dialog.open(EmployeeDetailDialogComponent, {
       width: '620px',
       maxWidth: '94vw',
-      data: { employee }
+      data: { employee, canEdit: this.auth.isAdmin() }
     });
 
     ref.afterClosed().subscribe((result) => {
-      if (result === 'edit') {
+      if (result === 'edit' && this.auth.isAdmin()) {
         this.openEdit(employee);
       }
     });
@@ -135,6 +137,9 @@ export class EmployeesListComponent implements OnInit, OnDestroy {
   }
 
   openCreate(): void {
+    if (!this.auth.isAdmin()) {
+      return;
+    }
     const ref = this.dialog.open(EmployeeFormDialogComponent, {
       width: '740px',
       maxWidth: '94vw',
@@ -157,6 +162,9 @@ export class EmployeesListComponent implements OnInit, OnDestroy {
   }
 
   openEdit(employee: Employee): void {
+    if (!this.auth.isAdmin()) {
+      return;
+    }
     const ref = this.dialog.open(EmployeeFormDialogComponent, {
       width: '740px',
       maxWidth: '94vw',
@@ -179,6 +187,9 @@ export class EmployeesListComponent implements OnInit, OnDestroy {
   }
 
   confirmDelete(employee: Employee): void {
+    if (!this.auth.isAdmin()) {
+      return;
+    }
     const ref = this.dialog.open(ConfirmDialogComponent, {
       width: '440px',
       maxWidth: '94vw',

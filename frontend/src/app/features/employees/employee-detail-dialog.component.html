@@ -73,9 +73,11 @@
 
   <mat-dialog-actions align="end">
     <button mat-stroked-button type="button" (click)="close()">Close</button>
-    <button mat-flat-button color="primary" type="button" (click)="edit()">
-      <mat-icon>edit</mat-icon>
-      Edit employee
-    </button>
+    @if (canEdit) {
+      <button mat-flat-button color="primary" type="button" (click)="edit()">
+        <mat-icon>edit</mat-icon>
+        Edit employee
+      </button>
+    }
   </mat-dialog-actions>
 </div>

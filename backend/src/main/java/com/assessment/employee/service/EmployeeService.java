@@ -5,11 +5,16 @@ import com.assessment.employee.dto.EmployeeResponse;
 import com.assessment.employee.entity.Employee;
 import com.assessment.employee.entity.EmployeeStatus;
 import com.assessment.employee.entity.EmploymentType;
+import com.assessment.employee.entity.User;
 import com.assessment.employee.exception.ApiException;
 import com.assessment.employee.repository.EmployeeRepository;
+import com.assessment.employee.repository.UserRepository;
+import com.assessment.employee.security.SecurityUtils;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,19 +25,26 @@ import org.springframework.transaction.annotation.Transactional;
 public class EmployeeService {
 
     private final EmployeeRepository employeeRepository;
+    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public Page<EmployeeResponse> list(String search, Pageable pageable) {
+        if (!SecurityUtils.isAdmin()) {
+            return listOwnProfile(search, pageable);
+        }
         return employeeRepository.searchActive(search, pageable).map(EmployeeResponse::from);
     }
 
     @Transactional(readOnly = true)
     public EmployeeResponse getById(Long id) {
-        return EmployeeResponse.from(findActive(id));
+        Employee employee = findActive(id);
+        assertCanView(employee.getId());
+        return EmployeeResponse.from(employee);
     }
 
     @Transactional
     public EmployeeResponse create(EmployeeRequest request) {
+        requireAdmin();
         validateUniqueness(request.employeeCode(), request.email(), null);
         validateEmployment(request);
 
@@ -57,6 +69,7 @@ public class EmployeeService {
 
     @Transactional
     public EmployeeResponse update(Long id, EmployeeRequest request) {
+        requireAdmin();
         Employee employee = findActive(id);
         validateUniqueness(request.employeeCode(), request.email(), id);
         validateEmployment(request);
@@ -79,9 +92,57 @@ public class EmployeeService {
 
     @Transactional
     public void softDelete(Long id) {
+        requireAdmin();
         Employee employee = findActive(id);
         employee.setDeleted(true);
         employeeRepository.save(employee);
+    }
+
+    private Page<EmployeeResponse> listOwnProfile(String search, Pageable pageable) {
+        Employee mine = findActive(requireLinkedEmployeeId());
+        if (search != null && !search.isBlank()) {
+            String q = search.trim().toLowerCase();
+            boolean matches =
+                    contains(mine.getFirstName(), q)
+                            || contains(mine.getLastName(), q)
+                            || contains(mine.getEmail(), q)
+                            || contains(mine.getEmployeeCode(), q)
+                            || contains(mine.getDepartment(), q);
+            if (!matches) {
+                return Page.empty(pageable);
+            }
+        }
+        return new PageImpl<>(List.of(EmployeeResponse.from(mine)), pageable, 1);
+    }
+
+    private void assertCanView(Long employeeId) {
+        if (SecurityUtils.isAdmin()) {
+            return;
+        }
+        Long linked = requireLinkedEmployeeId();
+        if (!linked.equals(employeeId)) {
+            throw new ApiException("You can only view your own employee profile", HttpStatus.FORBIDDEN);
+        }
+    }
+
+    private Long requireLinkedEmployeeId() {
+        User user = userRepository
+                .findByUsername(SecurityUtils.currentUsername())
+                .orElseThrow(() -> new ApiException("User not found", HttpStatus.UNAUTHORIZED));
+        if (user.getEmployeeId() == null) {
+            throw new ApiException("No employee profile is linked to this account", HttpStatus.FORBIDDEN);
+        }
+        return user.getEmployeeId();
+    }
+
+    private void requireAdmin() {
+        if (!SecurityUtils.isAdmin()) {
+            throw new ApiException("Only administrators can modify employees", HttpStatus.FORBIDDEN);
+        }
+    }
+
+    private boolean contains(String value, String query) {
+        return value != null && value.toLowerCase().contains(query);
     }
 
     private Employee findActive(Long id) {
@@ -133,7 +194,6 @@ public class EmployeeService {
         if (request.status() != EmployeeStatus.INACTIVE) {
             return null;
         }
-        // Full-time: dedicated employment end date. Contract/intern: contract end is the end date.
         if (request.employmentType() == EmploymentType.FULL_TIME) {
             return request.employmentEndDate();
         }

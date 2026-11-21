@@ -2,7 +2,9 @@
   <span class="brand">Employee Management</span>
   <nav class="nav">
     <a mat-button routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
-    <a mat-button routerLink="/employees" routerLinkActive="active">Employees</a>
+    <a mat-button routerLink="/employees" routerLinkActive="active">
+      {{ auth.isAdmin() ? 'Employees' : 'My Profile' }}
+    </a>
     @if (auth.isAdmin()) {
       <a mat-button routerLink="/reports" routerLinkActive="active">Reports</a>
     }

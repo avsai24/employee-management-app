@@ -4,13 +4,17 @@
       <p class="eyebrow">Overview</p>
       <h1>Welcome back, {{ auth.username() }}</h1>
       <p class="subtitle">
-        Track workforce records, review status at a glance, and jump into daily tasks.
+        {{
+          auth.isAdmin()
+            ? 'Track workforce records, review status at a glance, and jump into daily tasks.'
+            : 'Welcome. You can view your own employee profile in read-only mode.'
+        }}
       </p>
     </div>
     <div class="hero-actions">
       <a mat-flat-button color="primary" routerLink="/employees">
-        <mat-icon>group</mat-icon>
-        Manage employees
+        <mat-icon>{{ auth.isAdmin() ? 'group' : 'badge' }}</mat-icon>
+        {{ auth.isAdmin() ? 'Manage employees' : 'My profile' }}
       </a>
       @if (auth.isAdmin()) {
         <a mat-stroked-button routerLink="/reports">

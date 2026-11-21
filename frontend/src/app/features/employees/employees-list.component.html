@@ -1,28 +1,38 @@
 <section class="page">
   <header class="hero">
     <div>
-      <p class="eyebrow">Directory</p>
-      <h1>Employees</h1>
-      <p class="subtitle">Search, sort, and manage employee records. Click a row to view details.</p>
+      <p class="eyebrow">{{ auth.isAdmin() ? 'Directory' : 'Self-service' }}</p>
+      <h1>{{ auth.isAdmin() ? 'Employees' : 'My Profile' }}</h1>
+      <p class="subtitle">
+        {{
+          auth.isAdmin()
+            ? 'Search, sort, and manage employee records. Click a row to view details.'
+            : 'Read-only view of your linked employee record.'
+        }}
+      </p>
     </div>
-    <button mat-flat-button color="primary" class="add-btn" (click)="openCreate()">
-      <mat-icon>person_add</mat-icon>
-      Add Employee
-    </button>
+    @if (auth.isAdmin()) {
+      <button mat-flat-button color="primary" class="add-btn" (click)="openCreate()">
+        <mat-icon>person_add</mat-icon>
+        Add Employee
+      </button>
+    }
   </header>
 
   <div class="panel">
     <div class="panel-toolbar">
-      <mat-form-field appearance="outline" class="search" subscriptSizing="dynamic">
-        <mat-label>Search employees</mat-label>
-        <mat-icon matPrefix>search</mat-icon>
-        <input matInput [formControl]="searchControl" placeholder="Name, email, code, department" />
-        @if (searchControl.value) {
-          <button matSuffix mat-icon-button type="button" (click)="clearSearch()" aria-label="Clear search">
-            <mat-icon>close</mat-icon>
-          </button>
-        }
-      </mat-form-field>
+      @if (auth.isAdmin()) {
+        <mat-form-field appearance="outline" class="search" subscriptSizing="dynamic">
+          <mat-label>Search employees</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
+          <input matInput [formControl]="searchControl" placeholder="Name, email, code, department" />
+          @if (searchControl.value) {
+            <button matSuffix mat-icon-button type="button" (click)="clearSearch()" aria-label="Clear search">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </mat-form-field>
+      }
       <span class="count">{{ totalElements }} record{{ totalElements === 1 ? '' : 's' }}</span>
     </div>
 
@@ -97,12 +107,14 @@
             <button mat-icon-button type="button" (click)="openView(row)" aria-label="View details">
               <mat-icon>visibility</mat-icon>
             </button>
-            <button mat-icon-button type="button" (click)="openEdit(row)" aria-label="Edit">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button mat-icon-button class="delete-btn" type="button" (click)="confirmDelete(row)" aria-label="Delete">
-              <mat-icon>delete</mat-icon>
-            </button>
+            @if (auth.isAdmin()) {
+              <button mat-icon-button type="button" (click)="openEdit(row)" aria-label="Edit">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button class="delete-btn" type="button" (click)="confirmDelete(row)" aria-label="Delete">
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
           </td>
         </ng-container>
 

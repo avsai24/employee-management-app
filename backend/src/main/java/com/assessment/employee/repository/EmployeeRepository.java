@@ -23,6 +23,8 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     Optional<Employee> findByIdAndDeletedFalse(Long id);
 
+    Optional<Employee> findByEmployeeCodeAndDeletedFalse(String employeeCode);
+
     @Query("""
             SELECT e FROM Employee e
             WHERE e.deleted = false

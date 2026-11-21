@@ -8,6 +8,7 @@ export interface LoginResponse {
   refreshToken: string;
   username: string;
   role: string;
+  employeeId?: number | null;
   expiresInMs: number;
 }
 

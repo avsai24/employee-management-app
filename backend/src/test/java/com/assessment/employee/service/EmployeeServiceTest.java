@@ -15,8 +15,12 @@ import com.assessment.employee.entity.EmployeeStatus;
 import com.assessment.employee.entity.EmploymentType;
 import com.assessment.employee.exception.ApiException;
 import com.assessment.employee.repository.EmployeeRepository;
+import com.assessment.employee.repository.UserRepository;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -24,6 +28,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 class EmployeeServiceTest {
@@ -31,8 +38,25 @@ class EmployeeServiceTest {
     @Mock
     private EmployeeRepository employeeRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     @InjectMocks
     private EmployeeService employeeService;
+
+    @BeforeEach
+    void setAdminSecurityContext() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        "admin",
+                        "n/a",
+                        List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     @Test
     void create_persistsNewEmployee() {
@@ -62,15 +86,11 @@ class EmployeeServiceTest {
 
         assertEquals(42L, response.id());
         assertEquals(EmploymentType.FULL_TIME, response.employmentType());
-        assertNull(captorEndDate(response));
+        assertNull(response.employmentEndDate());
 
         ArgumentCaptor<Employee> captor = ArgumentCaptor.forClass(Employee.class);
         verify(employeeRepository).save(captor.capture());
         assertEquals(false, captor.getValue().isDeleted());
-    }
-
-    private LocalDate captorEndDate(EmployeeResponse response) {
-        return response.employmentEndDate();
     }
 
     @Test

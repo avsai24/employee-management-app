@@ -36,4 +36,7 @@ public class User {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    /** Linked employee for self-service ROLE_USER accounts (null for admins). */
+    private Long employeeId;
 }

@@ -36,15 +36,23 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Seeded default user: admin / admin123");
         }
 
-        if (!userRepository.existsByUsername("user")) {
+        // Self-service login for employee Ava Patel (EMP001)
+        if (!userRepository.existsByUsername("ava.patel")) {
             userRepository.save(User.builder()
-                    .username("user")
-                    .password(passwordEncoder.encode("user123"))
+                    .username("ava.patel")
+                    .password(passwordEncoder.encode("ava123"))
                     .role("ROLE_USER")
                     .active(true)
                     .build());
-            log.info("Seeded standard user: user / user123 (no Reports access)");
+            log.info("Seeded self-service user: ava.patel / ava123 (linked to EMP001)");
         }
+
+        // Retire old generic demo account if it still exists
+        userRepository.findByUsername("user").ifPresent(legacy -> {
+            legacy.setActive(false);
+            userRepository.save(legacy);
+            log.info("Deactivated legacy demo account: user");
+        });
 
         // Backfill employment type for existing rows after schema update
         employeeRepository.findAll().stream()
@@ -73,6 +81,7 @@ public class DataInitializer implements CommandLineRunner {
             );
             employeeRepository.saveAll(seed);
             log.info("Seeded {} sample employees", seed.size());
+            linkSelfServiceUser();
             return;
         }
 
@@ -110,6 +119,22 @@ public class DataInitializer implements CommandLineRunner {
             });
             log.info("Adjusted sample hire dates into current month for report demos");
         }
+
+        linkSelfServiceUser();
+    }
+
+    /** Link ava.patel login to Ava Patel (EMP001) for self-service read-only demo. */
+    private void linkSelfServiceUser() {
+        userRepository.findByUsername("ava.patel").ifPresent(user -> {
+            employeeRepository.findByEmployeeCodeAndDeletedFalse("EMP001").ifPresent(emp -> {
+                if (emp.getId().equals(user.getEmployeeId())) {
+                    return;
+                }
+                user.setEmployeeId(emp.getId());
+                userRepository.save(user);
+                log.info("Linked ava.patel -> employee {} ({})", emp.getEmployeeCode(), emp.getId());
+            });
+        });
     }
 
     private Employee employee(

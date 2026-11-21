@@ -5,6 +5,7 @@ public record LoginResponse(
         String refreshToken,
         String username,
         String role,
+        Long employeeId,
         long expiresInMs
 ) {
 }
