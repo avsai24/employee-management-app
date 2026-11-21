@@ -1,4 +1,5 @@
 export type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
+export type EmploymentType = 'FULL_TIME' | 'CONTRACT' | 'INTERN';
 
 export interface Employee {
   id: number;
@@ -9,7 +10,11 @@ export interface Employee {
   phone?: string | null;
   department: string;
   status: EmployeeStatus;
+  employmentType: EmploymentType;
   hireDate: string;
+  contractEndDate?: string | null;
+  employmentEndDate?: string | null;
+  notes?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -22,7 +27,11 @@ export interface EmployeeRequest {
   phone?: string | null;
   department: string;
   status: EmployeeStatus;
+  employmentType: EmploymentType;
   hireDate: string;
+  contractEndDate?: string | null;
+  employmentEndDate?: string | null;
+  notes?: string | null;
 }
 
 export interface PageResponse<T> {

@@ -48,11 +48,10 @@ export class ReportsComponent implements OnInit {
 
   readonly statuses: Array<EmployeeStatus | ''> = ['', 'ACTIVE', 'INACTIVE', 'ON_LEAVE'];
   readonly displayedColumns = [
+    'employee',
     'employeeCode',
-    'firstName',
-    'lastName',
-    'email',
     'department',
+    'employmentType',
     'status',
     'hireDate'
   ];
@@ -107,7 +106,7 @@ export class ReportsComponent implements OnInit {
       return;
     }
     this.reportService.exportExcel(this.query()).subscribe({
-      next: (blob) => this.download(blob, 'employee-report.xlsx'),
+      next: (blob) => this.download(blob, this.exportFilename('xlsx')),
       error: () => this.snackBar.open('Excel export failed', 'Close', { duration: 3000 })
     });
   }
@@ -117,9 +116,17 @@ export class ReportsComponent implements OnInit {
       return;
     }
     this.reportService.exportPdf(this.query()).subscribe({
-      next: (blob) => this.download(blob, 'employee-report.pdf'),
+      next: (blob) => this.download(blob, this.exportFilename('pdf')),
       error: () => this.snackBar.open('PDF export failed', 'Close', { duration: 3000 })
     });
+  }
+
+  formatStatus(status: string): string {
+    return status
+      .toLowerCase()
+      .split('_')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
   }
 
   statusEntries(): Array<{ key: string; value: number }> {
@@ -194,6 +201,15 @@ export class ReportsComponent implements OnInit {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  private exportFilename(extension: 'pdf' | 'xlsx'): string {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const stamp =
+      `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}` +
+      `_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    return `employee-report-${stamp}.${extension}`;
   }
 
   private download(blob: Blob, filename: string): void {

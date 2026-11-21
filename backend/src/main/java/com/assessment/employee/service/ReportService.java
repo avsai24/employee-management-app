@@ -106,7 +106,8 @@ public class ReportService {
             headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
             String[] headers = {
-                    "Code", "First Name", "Last Name", "Email", "Phone", "Department", "Status", "Hire Date"
+                    "Code", "First Name", "Last Name", "Email", "Phone", "Department", "Status",
+                    "Employment Type", "Hire Date", "Contract End", "Employment End", "Notes"
             };
             Row header = sheet.createRow(0);
             for (int i = 0; i < headers.length; i++) {
@@ -125,7 +126,14 @@ public class ReportService {
                 row.createCell(4).setCellValue(employee.getPhone() == null ? "" : employee.getPhone());
                 row.createCell(5).setCellValue(employee.getDepartment());
                 row.createCell(6).setCellValue(employee.getStatus().name());
-                row.createCell(7).setCellValue(employee.getHireDate().format(DATE_FMT));
+                row.createCell(7).setCellValue(
+                        employee.getEmploymentType() == null ? "FULL_TIME" : employee.getEmploymentType().name());
+                row.createCell(8).setCellValue(employee.getHireDate().format(DATE_FMT));
+                row.createCell(9).setCellValue(
+                        employee.getContractEndDate() == null ? "" : employee.getContractEndDate().format(DATE_FMT));
+                row.createCell(10).setCellValue(
+                        employee.getEmploymentEndDate() == null ? "" : employee.getEmploymentEndDate().format(DATE_FMT));
+                row.createCell(11).setCellValue(employee.getNotes() == null ? "" : employee.getNotes());
             }
 
             for (int i = 0; i < headers.length; i++) {
@@ -145,58 +153,127 @@ public class ReportService {
         ReportFilter normalized = normalize(filter);
 
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            Document document = new Document(PageSize.A4.rotate(), 36, 36, 36, 36);
-            PdfWriter.getInstance(document, out);
+            Document document = new Document(PageSize.A4.rotate(), 40, 40, 42, 42);
+            PdfWriter writer = PdfWriter.getInstance(document, out);
+            writer.setPageEvent(new ReportPageFooter());
             document.open();
 
-            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
-            Font metaFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
-            Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
-            Font bodyFont = FontFactory.getFont(FontFactory.HELVETICA, 9);
+            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18, new Color(20, 20, 20));
+            Font metaFont = FontFactory.getFont(FontFactory.HELVETICA, 10, new Color(55, 55, 55));
+            Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, new Color(25, 25, 25));
+            Font bodyFont = FontFactory.getFont(FontFactory.HELVETICA, 8.5f, new Color(30, 30, 30));
+            Font totalFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, new Color(25, 25, 25));
 
-            document.add(new Paragraph("Employee Management Report", titleFont));
+            // Company / document header (assessment optional polish)
+            Paragraph company = new Paragraph("Workforce Suite", metaFont);
+            company.setSpacingAfter(2f);
+            document.add(company);
+
+            Paragraph title = new Paragraph("Employee Management Report", titleFont);
+            title.setSpacingAfter(8f);
+            document.add(title);
+
             document.add(new Paragraph("Generated: " + LocalDate.now().format(DATE_FMT), metaFont));
-            document.add(new Paragraph(
+            Paragraph filters = new Paragraph(
                     "Filters: status=" + valueOrAll(normalized.status())
                             + ", department=" + valueOrAll(normalized.department())
                             + ", from=" + normalized.fromDate()
                             + ", to=" + normalized.toDate(),
-                    metaFont));
-            document.add(new Paragraph(" "));
+                    metaFont);
+            filters.setSpacingAfter(14f);
+            document.add(filters);
 
-            PdfPTable table = new PdfPTable(8);
+            PdfPTable table = new PdfPTable(9);
             table.setWidthPercentage(100);
-            table.setWidths(new float[] {1.2f, 1.4f, 1.4f, 2.4f, 1.5f, 1.5f, 1.2f, 1.2f});
+            table.setWidths(new float[] {1.05f, 1.2f, 1.2f, 2.35f, 1.35f, 1.15f, 1.25f, 1.15f, 1.2f});
+            table.setHeaderRows(1);
+            table.setSpacingBefore(2f);
 
             String[] headers = {
-                    "Code", "First Name", "Last Name", "Email", "Phone", "Department", "Status", "Hire Date"
+                    "Code", "First Name", "Last Name", "Email", "Department", "Status",
+                    "Type", "Hire Date", "Contract End"
             };
             for (String header : headers) {
-                PdfPCell cell = new PdfPCell(new Phrase(header, headerFont));
-                cell.setBackgroundColor(new Color(230, 230, 230));
-                cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-                cell.setPadding(5);
-                table.addCell(cell);
+                table.addCell(headerCell(header, headerFont));
             }
 
-            for (Employee employee : employees) {
-                table.addCell(new Phrase(employee.getEmployeeCode(), bodyFont));
-                table.addCell(new Phrase(employee.getFirstName(), bodyFont));
-                table.addCell(new Phrase(employee.getLastName(), bodyFont));
-                table.addCell(new Phrase(employee.getEmail(), bodyFont));
-                table.addCell(new Phrase(employee.getPhone() == null ? "" : employee.getPhone(), bodyFont));
-                table.addCell(new Phrase(employee.getDepartment(), bodyFont));
-                table.addCell(new Phrase(employee.getStatus().name(), bodyFont));
-                table.addCell(new Phrase(employee.getHireDate().format(DATE_FMT), bodyFont));
+            if (employees.isEmpty()) {
+                PdfPCell empty = new PdfPCell(new Phrase("No employees match the selected filters.", bodyFont));
+                empty.setColspan(9);
+                empty.setPadding(10f);
+                empty.setHorizontalAlignment(Element.ALIGN_LEFT);
+                empty.setBorderColor(new Color(180, 180, 180));
+                table.addCell(empty);
+            } else {
+                for (Employee employee : employees) {
+                    table.addCell(bodyCell(employee.getEmployeeCode(), bodyFont));
+                    table.addCell(bodyCell(employee.getFirstName(), bodyFont));
+                    table.addCell(bodyCell(employee.getLastName(), bodyFont));
+                    table.addCell(bodyCell(employee.getEmail(), bodyFont));
+                    table.addCell(bodyCell(employee.getDepartment(), bodyFont));
+                    table.addCell(bodyCell(employee.getStatus().name(), bodyFont));
+                    table.addCell(bodyCell(
+                            employee.getEmploymentType() == null ? "FULL_TIME" : employee.getEmploymentType().name(),
+                            bodyFont));
+                    table.addCell(bodyCell(employee.getHireDate().format(DATE_FMT), bodyFont));
+                    table.addCell(bodyCell(
+                            employee.getContractEndDate() == null
+                                    ? "-"
+                                    : employee.getContractEndDate().format(DATE_FMT),
+                            bodyFont));
+                }
             }
 
             document.add(table);
-            document.add(new Paragraph(" "));
-            document.add(new Paragraph("Total records: " + employees.size(), metaFont));
+
+            Paragraph total = new Paragraph("Total records: " + employees.size(), totalFont);
+            total.setSpacingBefore(12f);
+            document.add(total);
+
             document.close();
             return out.toByteArray();
         } catch (Exception ex) {
             throw new ApiException("Failed to generate PDF export", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private PdfPCell headerCell(String text, Font font) {
+        PdfPCell cell = new PdfPCell(new Phrase(text, font));
+        cell.setBackgroundColor(new Color(230, 230, 230));
+        cell.setHorizontalAlignment(Element.ALIGN_LEFT);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        cell.setPadding(6f);
+        cell.setBorderColor(new Color(120, 120, 120));
+        cell.setBorderWidth(0.6f);
+        return cell;
+    }
+
+    private PdfPCell bodyCell(String text, Font font) {
+        PdfPCell cell = new PdfPCell(new Phrase(text == null ? "" : text, font));
+        cell.setHorizontalAlignment(Element.ALIGN_LEFT);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        cell.setPadding(5f);
+        cell.setBorderColor(new Color(160, 160, 160));
+        cell.setBorderWidth(0.5f);
+        return cell;
+    }
+
+    /** Footer with page numbers on each PDF page. */
+    private static final class ReportPageFooter extends com.lowagie.text.pdf.PdfPageEventHelper {
+        private final Font footerFont = FontFactory.getFont(FontFactory.HELVETICA, 8, new Color(100, 100, 100));
+
+        @Override
+        public void onEndPage(com.lowagie.text.pdf.PdfWriter writer, Document document) {
+            try {
+                com.lowagie.text.pdf.PdfContentByte cb = writer.getDirectContent();
+                String text = "Employee Management · Page " + writer.getPageNumber();
+                float x = (document.right() + document.left()) / 2;
+                float y = document.bottom() - 18;
+                com.lowagie.text.pdf.ColumnText.showTextAligned(
+                        cb, Element.ALIGN_CENTER, new Phrase(text, footerFont), x, y, 0);
+            } catch (Exception ignored) {
+                // Footer is best-effort; never fail the export for it
+            }
         }
     }
 

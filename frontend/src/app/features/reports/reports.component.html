@@ -1,8 +1,9 @@
 <section class="page">
-  <div class="toolbar">
+  <header class="hero">
     <div>
+      <p class="eyebrow">Analytics</p>
       <h1>Employee Report</h1>
-      <p>Filter by date range, status, and department. Export filtered results.</p>
+      <p class="subtitle">Filter by date, status, and department, then export the results.</p>
     </div>
     <div class="actions">
       <button mat-stroked-button type="button" (click)="exportExcel()">
@@ -14,36 +15,36 @@
         Export PDF
       </button>
     </div>
-  </div>
+  </header>
 
-  <form class="filters" [formGroup]="filterForm" (ngSubmit)="applyFilters()">
-    <mat-form-field appearance="outline">
+  <form class="filters-panel" [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
       <mat-label>From</mat-label>
       <input matInput [matDatepicker]="fromPicker" formControlName="fromDate" />
       <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
       <mat-datepicker #fromPicker></mat-datepicker>
     </mat-form-field>
 
-    <mat-form-field appearance="outline">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
       <mat-label>To</mat-label>
       <input matInput [matDatepicker]="toPicker" formControlName="toDate" />
       <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
       <mat-datepicker #toPicker></mat-datepicker>
     </mat-form-field>
 
-    <mat-form-field appearance="outline">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
       <mat-label>Status</mat-label>
       <mat-select formControlName="status">
         <mat-option value="">All</mat-option>
         @for (status of statuses; track status) {
           @if (status) {
-            <mat-option [value]="status">{{ status }}</mat-option>
+            <mat-option [value]="status">{{ formatStatus(status) }}</mat-option>
           }
         }
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field appearance="outline">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
       <mat-label>Department</mat-label>
       <mat-select formControlName="department">
         <mat-option value="">All</mat-option>
@@ -53,93 +54,128 @@
       </mat-select>
     </mat-form-field>
 
-    <button mat-flat-button color="primary" type="submit">Apply</button>
+    <button mat-flat-button color="primary" type="submit" class="apply-btn">
+      <mat-icon>filter_alt</mat-icon>
+      Apply
+    </button>
   </form>
 
   <div class="summary-grid">
-    <mat-card>
-      <mat-card-title>Total Records</mat-card-title>
-      <mat-card-content class="metric">{{ summary?.totalRecords ?? 0 }}</mat-card-content>
-    </mat-card>
+    <article class="summary-card total">
+      <div class="summary-icon">
+        <mat-icon>insights</mat-icon>
+      </div>
+      <div>
+        <p class="summary-label">Total records</p>
+        <p class="summary-value">{{ summary?.totalRecords ?? 0 }}</p>
+      </div>
+    </article>
 
-    <mat-card>
-      <mat-card-title>By Status</mat-card-title>
-      <mat-card-content>
+    <article class="summary-card">
+      <p class="summary-label">By status</p>
+      <div class="summary-list">
         @for (item of statusEntries(); track item.key) {
-          <div class="metric-row">
-            <span>{{ item.key }}</span>
+          <div class="summary-row">
+            <span class="status" [attr.data-status]="item.key">{{ formatStatus(item.key) }}</span>
             <strong>{{ item.value }}</strong>
           </div>
         }
-      </mat-card-content>
-    </mat-card>
+      </div>
+    </article>
 
-    <mat-card>
-      <mat-card-title>By Department</mat-card-title>
-      <mat-card-content>
+    <article class="summary-card">
+      <p class="summary-label">By department</p>
+      <div class="summary-list">
         @for (item of departmentEntries(); track item.key) {
-          <div class="metric-row">
+          <div class="summary-row">
             <span>{{ item.key }}</span>
             <strong>{{ item.value }}</strong>
           </div>
         } @empty {
           <div class="muted">No departments in range</div>
         }
-      </mat-card-content>
-    </mat-card>
+      </div>
+    </article>
   </div>
 
-  <div class="table-wrap">
-    @if (loading) {
-      <div class="loading">
-        <mat-spinner diameter="36"></mat-spinner>
-      </div>
-    }
+  <div class="panel">
+    <div class="panel-toolbar">
+      <h2>Filtered results</h2>
+      <span class="count">{{ totalElements }} record{{ totalElements === 1 ? '' : 's' }}</span>
+    </div>
 
-    <table mat-table [dataSource]="data" matSort (matSortChange)="onSort($event)" class="mat-elevation-z1">
-      <ng-container matColumnDef="employeeCode">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Code</th>
-        <td mat-cell *matCellDef="let row">{{ row.employeeCode }}</td>
-      </ng-container>
-      <ng-container matColumnDef="firstName">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>First Name</th>
-        <td mat-cell *matCellDef="let row">{{ row.firstName }}</td>
-      </ng-container>
-      <ng-container matColumnDef="lastName">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Last Name</th>
-        <td mat-cell *matCellDef="let row">{{ row.lastName }}</td>
-      </ng-container>
-      <ng-container matColumnDef="email">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Email</th>
-        <td mat-cell *matCellDef="let row">{{ row.email }}</td>
-      </ng-container>
-      <ng-container matColumnDef="department">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Department</th>
-        <td mat-cell *matCellDef="let row">{{ row.department }}</td>
-      </ng-container>
-      <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
-        <td mat-cell *matCellDef="let row">{{ row.status }}</td>
-      </ng-container>
-      <ng-container matColumnDef="hireDate">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Hire Date</th>
-        <td mat-cell *matCellDef="let row">{{ row.hireDate }}</td>
-      </ng-container>
+    <div class="table-wrap">
+      @if (loading) {
+        <div class="loading">
+          <mat-spinner diameter="36"></mat-spinner>
+        </div>
+      }
 
-      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-      <tr class="mat-row" *matNoDataRow>
-        <td class="mat-cell empty" [attr.colspan]="displayedColumns.length">No records for selected filters.</td>
-      </tr>
-    </table>
+      <table mat-table [dataSource]="data" matSort (matSortChange)="onSort($event)">
+        <ng-container matColumnDef="employee">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="firstName">Employee</th>
+          <td mat-cell *matCellDef="let row">
+            <div class="employee-cell">
+              <div class="avatar">{{ row.firstName.charAt(0) }}{{ row.lastName.charAt(0) }}</div>
+              <div class="employee-meta">
+                <strong>{{ row.firstName }} {{ row.lastName }}</strong>
+                <span>{{ row.email }}</span>
+              </div>
+            </div>
+          </td>
+        </ng-container>
 
-    <mat-paginator
-      [length]="totalElements"
-      [pageIndex]="pageIndex"
-      [pageSize]="pageSize"
-      [pageSizeOptions]="[5, 10, 20]"
-      (page)="onPage($event)"
-      showFirstLastButtons
-    ></mat-paginator>
+        <ng-container matColumnDef="employeeCode">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Code</th>
+          <td mat-cell *matCellDef="let row"><span class="code">{{ row.employeeCode }}</span></td>
+        </ng-container>
+
+        <ng-container matColumnDef="department">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Department</th>
+          <td mat-cell *matCellDef="let row">{{ row.department }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="employmentType">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
+          <td mat-cell *matCellDef="let row">
+            <div class="type-cell">
+              <span>{{ formatStatus(row.employmentType || 'FULL_TIME') }}</span>
+              @if (row.contractEndDate) {
+                <small>Ends {{ row.contractEndDate }}</small>
+              }
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="status" [attr.data-status]="row.status">{{ formatStatus(row.status) }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="hireDate">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Hire Date</th>
+          <td mat-cell *matCellDef="let row">{{ row.hireDate }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        <tr class="mat-row" *matNoDataRow>
+          <td class="mat-cell empty" [attr.colspan]="displayedColumns.length">
+            No records for selected filters.
+          </td>
+        </tr>
+      </table>
+
+      <mat-paginator
+        [length]="totalElements"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="[5, 10, 20]"
+        (page)="onPage($event)"
+        showFirstLastButtons
+      ></mat-paginator>
+    </div>
   </div>
 </section>

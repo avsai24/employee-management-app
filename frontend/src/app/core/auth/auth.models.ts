@@ -5,7 +5,12 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   token: string;
+  refreshToken: string;
   username: string;
   role: string;
   expiresInMs: number;
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
 }

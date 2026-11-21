@@ -53,8 +53,21 @@ public class Employee {
     @Column(nullable = false, length = 20)
     private EmployeeStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private EmploymentType employmentType = EmploymentType.FULL_TIME;
+
     @Column(nullable = false)
     private LocalDate hireDate;
+
+    private LocalDate contractEndDate;
+
+    /** Last working day / exit date — used especially when status is INACTIVE */
+    private LocalDate employmentEndDate;
+
+    @Column(length = 500)
+    private String notes;
 
     @Column(nullable = false)
     private boolean deleted = false;

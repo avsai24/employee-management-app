@@ -1,6 +1,7 @@
 package com.assessment.employee.dto;
 
 import com.assessment.employee.entity.EmployeeStatus;
+import com.assessment.employee.entity.EmploymentType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -16,6 +17,10 @@ public record EmployeeRequest(
         @Size(max = 20) @Pattern(regexp = "^$|^[+0-9\\-\\s()]{7,20}$", message = "Invalid phone number") String phone,
         @NotBlank @Size(max = 50) String department,
         @NotNull EmployeeStatus status,
-        @NotNull LocalDate hireDate
+        @NotNull EmploymentType employmentType,
+        @NotNull LocalDate hireDate,
+        LocalDate contractEndDate,
+        LocalDate employmentEndDate,
+        @Size(max = 500) String notes
 ) {
 }

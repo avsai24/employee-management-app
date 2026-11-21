@@ -8,6 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
@@ -21,7 +22,8 @@ import { AuthService } from '../../core/auth/auth.service';
     MatInputModule,
     MatButtonModule,
     MatCheckboxModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatIconModule
   ],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
@@ -33,6 +35,7 @@ export class LoginComponent implements OnInit {
 
   errorMessage = '';
   loading = false;
+  hidePassword = true;
 
   readonly form = this.fb.nonNullable.group({
     username: ['', [Validators.required, Validators.minLength(3)]],
@@ -49,6 +52,10 @@ export class LoginComponent implements OnInit {
     if (remembered) {
       this.form.patchValue({ username: remembered, rememberMe: true });
     }
+  }
+
+  togglePasswordVisibility(): void {
+    this.hidePassword = !this.hidePassword;
   }
 
   submit(): void {

@@ -2,6 +2,7 @@ package com.assessment.employee.config;
 
 import com.assessment.employee.entity.Employee;
 import com.assessment.employee.entity.EmployeeStatus;
+import com.assessment.employee.entity.EmploymentType;
 import com.assessment.employee.entity.User;
 import com.assessment.employee.repository.EmployeeRepository;
 import com.assessment.employee.repository.UserRepository;
@@ -35,29 +36,66 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Seeded default user: admin / admin123");
         }
 
+        if (!userRepository.existsByUsername("user")) {
+            userRepository.save(User.builder()
+                    .username("user")
+                    .password(passwordEncoder.encode("user123"))
+                    .role("ROLE_USER")
+                    .active(true)
+                    .build());
+            log.info("Seeded standard user: user / user123 (no Reports access)");
+        }
+
+        // Backfill employment type for existing rows after schema update
+        employeeRepository.findAll().stream()
+                .filter(emp -> emp.getEmploymentType() == null)
+                .forEach(emp -> {
+                    emp.setEmploymentType(EmploymentType.FULL_TIME);
+                    employeeRepository.save(emp);
+                });
+
         if (employeeRepository.count() == 0) {
             LocalDate today = LocalDate.now();
             YearMonth current = YearMonth.from(today);
             List<Employee> seed = List.of(
-                    employee("EMP001", "Ava", "Patel", "ava.patel@example.com", "Engineering", EmployeeStatus.ACTIVE, current.atDay(1)),
-                    employee("EMP002", "Noah", "Kim", "noah.kim@example.com", "Engineering", EmployeeStatus.ACTIVE, current.atDay(Math.min(5, current.lengthOfMonth()))),
-                    employee("EMP003", "Mia", "Garcia", "mia.garcia@example.com", "HR", EmployeeStatus.ON_LEAVE, current.atDay(Math.min(10, current.lengthOfMonth()))),
-                    employee("EMP004", "Liam", "Chen", "liam.chen@example.com", "Finance", EmployeeStatus.ACTIVE, today),
-                    employee("EMP005", "Sofia", "Nguyen", "sofia.nguyen@example.com", "Sales", EmployeeStatus.INACTIVE, today.minusMonths(2)),
-                    employee("EMP006", "Ethan", "Brooks", "ethan.brooks@example.com", "Sales", EmployeeStatus.ACTIVE, today.minusMonths(1)),
-                    employee("EMP007", "Olivia", "Singh", "olivia.singh@example.com", "Marketing", EmployeeStatus.ACTIVE, today.minusMonths(3)),
-                    employee("EMP008", "Lucas", "Martinez", "lucas.martinez@example.com", "Engineering", EmployeeStatus.ACTIVE, today.minusMonths(4)),
-                    employee("EMP009", "Emma", "Wilson", "emma.wilson@example.com", "HR", EmployeeStatus.ACTIVE, today.minusMonths(6)),
-                    employee("EMP010", "James", "Taylor", "james.taylor@example.com", "Finance", EmployeeStatus.ON_LEAVE, today.minusMonths(8)),
-                    employee("EMP011", "Amelia", "Davis", "amelia.davis@example.com", "Marketing", EmployeeStatus.ACTIVE, today.minusYears(1)),
-                    employee("EMP012", "Benjamin", "Lee", "benjamin.lee@example.com", "Engineering", EmployeeStatus.INACTIVE, today.minusYears(2))
+                    employee("EMP001", "Ava", "Patel", "ava.patel@example.com", "Engineering", EmployeeStatus.ACTIVE, EmploymentType.FULL_TIME, current.atDay(1), null, null, null),
+                    employee("EMP002", "Noah", "Kim", "noah.kim@example.com", "Engineering", EmployeeStatus.ACTIVE, EmploymentType.CONTRACT, current.atDay(Math.min(5, current.lengthOfMonth())), today.plusMonths(6), null, "6-month contract"),
+                    employee("EMP003", "Mia", "Garcia", "mia.garcia@example.com", "HR", EmployeeStatus.ON_LEAVE, EmploymentType.FULL_TIME, current.atDay(Math.min(10, current.lengthOfMonth())), null, null, "On parental leave"),
+                    employee("EMP004", "Liam", "Chen", "liam.chen@example.com", "Finance", EmployeeStatus.ACTIVE, EmploymentType.FULL_TIME, today, null, null, null),
+                    employee("EMP005", "Sofia", "Nguyen", "sofia.nguyen@example.com", "Sales", EmployeeStatus.INACTIVE, EmploymentType.CONTRACT, today.minusMonths(2), today.minusDays(5), today.minusDays(5), "Contract completed - did not renew"),
+                    employee("EMP006", "Ethan", "Brooks", "ethan.brooks@example.com", "Sales", EmployeeStatus.ACTIVE, EmploymentType.FULL_TIME, today.minusMonths(1), null, null, null),
+                    employee("EMP007", "Olivia", "Singh", "olivia.singh@example.com", "Marketing", EmployeeStatus.ACTIVE, EmploymentType.INTERN, today.minusMonths(3), today.plusMonths(3), null, "Summer internship"),
+                    employee("EMP008", "Lucas", "Martinez", "lucas.martinez@example.com", "Engineering", EmployeeStatus.ACTIVE, EmploymentType.FULL_TIME, today.minusMonths(4), null, null, null),
+                    employee("EMP009", "Emma", "Wilson", "emma.wilson@example.com", "HR", EmployeeStatus.ACTIVE, EmploymentType.FULL_TIME, today.minusMonths(6), null, null, null),
+                    employee("EMP010", "James", "Taylor", "james.taylor@example.com", "Finance", EmployeeStatus.ON_LEAVE, EmploymentType.CONTRACT, today.minusMonths(8), today.plusMonths(2), null, "Renewable contract"),
+                    employee("EMP011", "Amelia", "Davis", "amelia.davis@example.com", "Marketing", EmployeeStatus.ACTIVE, EmploymentType.FULL_TIME, today.minusYears(1), null, null, null),
+                    employee("EMP012", "Benjamin", "Lee", "benjamin.lee@example.com", "Engineering", EmployeeStatus.INACTIVE, EmploymentType.FULL_TIME, today.minusYears(2), null, today.minusMonths(3), "Resigned - relocated out of state")
             );
             employeeRepository.saveAll(seed);
             log.info("Seeded {} sample employees", seed.size());
             return;
         }
 
-        // Existing DB from earlier seed: move a few hire dates into the current month for report demos
+        // Backfill inactive employees missing end date / reason
+        LocalDate today = LocalDate.now();
+        employeeRepository.findAll().stream()
+                .filter(emp -> emp.getStatus() == EmployeeStatus.INACTIVE)
+                .filter(emp -> emp.getEmploymentEndDate() == null || emp.getNotes() == null || emp.getNotes().isBlank())
+                .forEach(emp -> {
+                    if (emp.getEmploymentEndDate() == null) {
+                        LocalDate end = emp.getContractEndDate() != null
+                                ? emp.getContractEndDate()
+                                : today.minusDays(5);
+                        emp.setEmploymentEndDate(end);
+                    }
+                    if (emp.getNotes() == null || emp.getNotes().isBlank()) {
+                        emp.setNotes(emp.getEmploymentType() == EmploymentType.CONTRACT
+                                ? "Contract completed - did not renew"
+                                : "Employment ended");
+                    }
+                    employeeRepository.save(emp);
+                });
+
         YearMonth current = YearMonth.now();
         List<Employee> thisMonth = employeeRepository.findAllForReport(
                 null, null, current.atDay(1), current.atEndOfMonth());
@@ -65,6 +103,9 @@ public class DataInitializer implements CommandLineRunner {
             employeeRepository.findAll().stream().limit(4).forEach(emp -> {
                 emp.setHireDate(current.atDay(Math.min((int) (emp.getId() == null ? 1 : emp.getId()), current.lengthOfMonth())));
                 emp.setDeleted(false);
+                if (emp.getEmploymentType() == null) {
+                    emp.setEmploymentType(EmploymentType.FULL_TIME);
+                }
                 employeeRepository.save(emp);
             });
             log.info("Adjusted sample hire dates into current month for report demos");
@@ -78,7 +119,11 @@ public class DataInitializer implements CommandLineRunner {
             String email,
             String department,
             EmployeeStatus status,
-            LocalDate hireDate) {
+            EmploymentType employmentType,
+            LocalDate hireDate,
+            LocalDate contractEndDate,
+            LocalDate employmentEndDate,
+            String notes) {
         return Employee.builder()
                 .employeeCode(code)
                 .firstName(first)
@@ -87,7 +132,13 @@ public class DataInitializer implements CommandLineRunner {
                 .phone("+1-555-0100")
                 .department(department)
                 .status(status)
+                .employmentType(employmentType)
                 .hireDate(hireDate)
+                .contractEndDate(employmentType == EmploymentType.CONTRACT || employmentType == EmploymentType.INTERN
+                        ? contractEndDate
+                        : null)
+                .employmentEndDate(status == EmployeeStatus.INACTIVE ? employmentEndDate : null)
+                .notes(notes)
                 .deleted(false)
                 .build();
     }

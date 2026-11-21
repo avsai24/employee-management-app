@@ -15,6 +15,8 @@ import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
 import { Employee } from '../../core/employees/employee.models';
 import { EmployeeService } from '../../core/employees/employee.service';
 import { EmployeeFormDialogComponent } from './employee-form-dialog.component';
+import { EmployeeDetailDialogComponent } from './employee-detail-dialog.component';
+import { ConfirmDialogComponent } from '../../shared/confirm-dialog.component';
 
 @Component({
   selector: 'app-employees-list',
@@ -46,13 +48,13 @@ export class EmployeesListComponent implements OnInit, OnDestroy {
   @ViewChild(MatSort) sort!: MatSort;
 
   readonly displayedColumns = [
+    'employee',
     'employeeCode',
-    'firstName',
-    'lastName',
-    'email',
     'department',
+    'employmentType',
     'status',
     'hireDate',
+    'endDate',
     'actions'
   ];
 
@@ -98,9 +100,45 @@ export class EmployeesListComponent implements OnInit, OnDestroy {
     this.searchControl.setValue('');
   }
 
+  openView(employee: Employee): void {
+    const ref = this.dialog.open(EmployeeDetailDialogComponent, {
+      width: '620px',
+      maxWidth: '94vw',
+      data: { employee }
+    });
+
+    ref.afterClosed().subscribe((result) => {
+      if (result === 'edit') {
+        this.openEdit(employee);
+      }
+    });
+  }
+
+  formatLabel(value: string): string {
+    return value
+      .toLowerCase()
+      .split('_')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }
+
+  /** Single end-date value for the list: contract/intern term, or full-time exit date. */
+  endDateFor(row: Employee): string | null {
+    const type = row.employmentType || 'FULL_TIME';
+    if (type === 'CONTRACT' || type === 'INTERN') {
+      return row.contractEndDate || row.employmentEndDate || null;
+    }
+    if (row.status === 'INACTIVE') {
+      return row.employmentEndDate || null;
+    }
+    return null;
+  }
+
   openCreate(): void {
     const ref = this.dialog.open(EmployeeFormDialogComponent, {
-      width: '720px',
+      width: '740px',
+      maxWidth: '94vw',
+      panelClass: 'employee-dialog-panel',
       data: {}
     });
 
@@ -120,7 +158,9 @@ export class EmployeesListComponent implements OnInit, OnDestroy {
 
   openEdit(employee: Employee): void {
     const ref = this.dialog.open(EmployeeFormDialogComponent, {
-      width: '720px',
+      width: '740px',
+      maxWidth: '94vw',
+      panelClass: 'employee-dialog-panel',
       data: { employee }
     });
 
@@ -139,19 +179,29 @@ export class EmployeesListComponent implements OnInit, OnDestroy {
   }
 
   confirmDelete(employee: Employee): void {
-    const confirmed = window.confirm(
-      `Delete ${employee.firstName} ${employee.lastName} (${employee.employeeCode})?`
-    );
-    if (!confirmed) {
-      return;
-    }
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      width: '440px',
+      maxWidth: '94vw',
+      data: {
+        title: 'Delete employee?',
+        message: `This will remove ${employee.firstName} ${employee.lastName} (${employee.employeeCode}). You can cancel if this was a mistake.`,
+        confirmText: 'Delete',
+        cancelText: 'Keep employee'
+      }
+    });
 
-    this.employeeService.delete(employee.id).subscribe({
-      next: () => {
-        this.snackBar.open('Employee deleted', 'Close', { duration: 2500 });
-        this.load();
-      },
-      error: (err) => this.showError(err, 'Failed to delete employee')
+    ref.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) {
+        return;
+      }
+
+      this.employeeService.delete(employee.id).subscribe({
+        next: () => {
+          this.snackBar.open('Employee deleted', 'Close', { duration: 2500 });
+          this.load();
+        },
+        error: (err) => this.showError(err, 'Failed to delete employee')
+      });
     });
   }
 

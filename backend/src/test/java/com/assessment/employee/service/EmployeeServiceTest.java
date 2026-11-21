@@ -1,6 +1,7 @@
 package com.assessment.employee.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -11,6 +12,7 @@ import com.assessment.employee.dto.EmployeeRequest;
 import com.assessment.employee.dto.EmployeeResponse;
 import com.assessment.employee.entity.Employee;
 import com.assessment.employee.entity.EmployeeStatus;
+import com.assessment.employee.entity.EmploymentType;
 import com.assessment.employee.exception.ApiException;
 import com.assessment.employee.repository.EmployeeRepository;
 import java.time.LocalDate;
@@ -42,7 +44,11 @@ class EmployeeServiceTest {
                 "555-0100",
                 "Engineering",
                 EmployeeStatus.ACTIVE,
-                LocalDate.of(2024, 1, 10));
+                EmploymentType.FULL_TIME,
+                LocalDate.of(2024, 1, 10),
+                null,
+                null,
+                "Founding engineer");
 
         when(employeeRepository.existsByEmployeeCodeAndDeletedFalse("EMP100")).thenReturn(false);
         when(employeeRepository.existsByEmailAndDeletedFalse("ada@example.com")).thenReturn(false);
@@ -55,31 +61,87 @@ class EmployeeServiceTest {
         EmployeeResponse response = employeeService.create(request);
 
         assertEquals(42L, response.id());
-        assertEquals("EMP100", response.employeeCode());
-        assertEquals("ada@example.com", response.email());
+        assertEquals(EmploymentType.FULL_TIME, response.employmentType());
+        assertNull(captorEndDate(response));
 
         ArgumentCaptor<Employee> captor = ArgumentCaptor.forClass(Employee.class);
         verify(employeeRepository).save(captor.capture());
         assertEquals(false, captor.getValue().isDeleted());
     }
 
+    private LocalDate captorEndDate(EmployeeResponse response) {
+        return response.employmentEndDate();
+    }
+
     @Test
-    void create_WhenEmailExists_ThrowsConflict() {
+    void create_WhenInactiveMissingReason_ThrowsBadRequest() {
         EmployeeRequest request = new EmployeeRequest(
-                "EMP100",
-                "Ada",
-                "Lovelace",
-                "ada@example.com",
+                "EMP102",
+                "Sofia",
+                "Nguyen",
+                "sofia2@example.com",
+                null,
+                "Sales",
+                EmployeeStatus.INACTIVE,
+                EmploymentType.FULL_TIME,
+                LocalDate.of(2019, 5, 4),
+                null,
+                LocalDate.of(2024, 1, 1),
+                null);
+
+        ApiException ex = assertThrows(ApiException.class, () -> employeeService.create(request));
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        verify(employeeRepository, never()).save(any());
+    }
+
+    @Test
+    void create_WhenInactiveContract_UsesContractEndAsEmploymentEnd() {
+        EmployeeRequest request = new EmployeeRequest(
+                "EMP103",
+                "Sofia",
+                "Nguyen",
+                "sofia3@example.com",
+                null,
+                "Sales",
+                EmployeeStatus.INACTIVE,
+                EmploymentType.CONTRACT,
+                LocalDate.of(2024, 1, 10),
+                LocalDate.of(2024, 6, 30),
+                null,
+                "Contract completed - did not renew");
+
+        when(employeeRepository.existsByEmployeeCodeAndDeletedFalse("EMP103")).thenReturn(false);
+        when(employeeRepository.existsByEmailAndDeletedFalse("sofia3@example.com")).thenReturn(false);
+        when(employeeRepository.save(any(Employee.class))).thenAnswer(invocation -> {
+            Employee saved = invocation.getArgument(0);
+            saved.setId(103L);
+            return saved;
+        });
+
+        EmployeeResponse response = employeeService.create(request);
+
+        assertEquals(LocalDate.of(2024, 6, 30), response.contractEndDate());
+        assertEquals(LocalDate.of(2024, 6, 30), response.employmentEndDate());
+    }
+
+    @Test
+    void create_WhenContractMissingEndDate_ThrowsBadRequest() {
+        EmployeeRequest request = new EmployeeRequest(
+                "EMP101",
+                "Grace",
+                "Hopper",
+                "grace@example.com",
                 null,
                 "Engineering",
                 EmployeeStatus.ACTIVE,
-                LocalDate.of(2024, 1, 10));
-
-        when(employeeRepository.existsByEmployeeCodeAndDeletedFalse("EMP100")).thenReturn(false);
-        when(employeeRepository.existsByEmailAndDeletedFalse("ada@example.com")).thenReturn(true);
+                EmploymentType.CONTRACT,
+                LocalDate.of(2024, 1, 10),
+                null,
+                null,
+                null);
 
         ApiException ex = assertThrows(ApiException.class, () -> employeeService.create(request));
-        assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
         verify(employeeRepository, never()).save(any());
     }
 
@@ -93,6 +155,7 @@ class EmployeeServiceTest {
                 .email("olivia@example.com")
                 .department("Marketing")
                 .status(EmployeeStatus.ACTIVE)
+                .employmentType(EmploymentType.FULL_TIME)
                 .hireDate(LocalDate.of(2022, 9, 30))
                 .deleted(false)
                 .build();

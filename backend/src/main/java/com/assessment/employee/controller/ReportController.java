@@ -6,6 +6,8 @@ import com.assessment.employee.dto.ReportSummaryResponse;
 import com.assessment.employee.entity.EmployeeStatus;
 import com.assessment.employee.service.ReportService;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -60,7 +62,7 @@ public class ReportController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
         byte[] bytes = reportService.exportExcel(new ReportFilter(status, department, fromDate, toDate));
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=employee-report.xlsx")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + exportFilename("xlsx"))
                 .contentType(MediaType.parseMediaType(
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .body(bytes);
@@ -74,8 +76,13 @@ public class ReportController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
         byte[] bytes = reportService.exportPdf(new ReportFilter(status, department, fromDate, toDate));
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=employee-report.pdf")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + exportFilename("pdf"))
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(bytes);
+    }
+
+    private String exportFilename(String extension) {
+        String stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        return "employee-report-" + stamp + "." + extension;
     }
 }
