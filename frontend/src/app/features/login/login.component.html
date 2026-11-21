@@ -1,0 +1,52 @@
+<div class="login-page">
+  <mat-card class="login-card">
+    <mat-card-header>
+      <mat-card-title>Employee Management</mat-card-title>
+      <mat-card-subtitle>Sign in to continue</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Username</mat-label>
+          <input matInput formControlName="username" autocomplete="username" />
+          @if (form.controls.username.hasError('required')) {
+            <mat-error>Username is required</mat-error>
+          } @else if (form.controls.username.hasError('minlength')) {
+            <mat-error>Minimum 3 characters</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Password</mat-label>
+          <input matInput type="password" formControlName="password" autocomplete="current-password" />
+          @if (form.controls.password.hasError('required')) {
+            <mat-error>Password is required</mat-error>
+          } @else if (form.controls.password.hasError('minlength')) {
+            <mat-error>Minimum 6 characters</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-checkbox formControlName="rememberMe">Remember me</mat-checkbox>
+
+        @if (errorMessage) {
+          <p class="error">{{ errorMessage }}</p>
+        }
+
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          class="full-width"
+          [disabled]="form.invalid || loading"
+        >
+          @if (loading) {
+            <mat-spinner diameter="20"></mat-spinner>
+          } @else {
+            Login
+          }
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>
