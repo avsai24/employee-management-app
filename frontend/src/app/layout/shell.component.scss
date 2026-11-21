@@ -1,0 +1,28 @@
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.brand {
+  font-weight: 600;
+  margin-right: 1rem;
+}
+
+.nav a.active {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.user {
+  margin-right: 0.5rem;
+  opacity: 0.9;
+}
+
+.content {
+  min-height: calc(100vh - 64px);
+  background: #f4f6f9;
+}
